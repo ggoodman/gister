@@ -175,7 +175,7 @@ class GisterView extends lumbar.View
       runPreview = ->
         url = resolveLocalFilesystemURL(gister.state.get("currentFile"))
         console.log "Resolved", gister.state.get("currentFile"), "to", url
-        window.open("filesystem:http://c9.io/temporary/index.html", "preview", "", true)
+        window.open("filesystem:#{window.location.protocol}//#{window.location.host}/temporary/index.html", "preview", "", true)
       
       loadFiles = (fs) ->
         remaining = 0

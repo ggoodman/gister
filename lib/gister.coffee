@@ -141,6 +141,7 @@ class GisterView extends lumbar.View
   template: ->
     header "#topbar", ->
       span "Gister"
+      button ".btn.pull-right", "Preview"
     div "#editarea", ->
       input "#toggle", type: "checkbox", checked: "checked"
       label for: "toggle", ->
@@ -149,5 +150,54 @@ class GisterView extends lumbar.View
       div "#editorC", ->
         div "#editor", ->
 
+  events:
+    "click button": ->
+      window.requestFileSystem ||= window.webkitRequestFileSystem
+      window.resolveLocalFilesystemURL ||= window.webkitResolveLocalFileSystemURL
+      window.BlobBuilder ||= window.WebKitBlobBuilder
+      
+      errorHandler = (e) ->
+        switch e.code
+          when FileError.QUOTA_EXCEEDED_ERR
+            msg = 'QUOTA_EXCEEDED_ERR'
+          when FileError.NOT_FOUND_ERR
+            msg = 'NOT_FOUND_ERR';
+          when FileError.SECURITY_ERR
+            msg = 'SECURITY_ERR';
+          when FileError.INVALID_MODIFICATION_ERR
+            msg = 'INVALID_MODIFICATION_ERR';
+          when FileError.INVALID_STATE_ERR
+            msg = 'INVALID_STATE_ERR';
+          else
+            msg = 'Unknown Error';
+        throw new Error("FS: #{msg}")
+      
+      runPreview = ->
+        url = resolveLocalFilesystemURL(gister.state.get("currentFile"))
+        console.log "Resolved", gister.state.get("currentFile"), "to", url
+        window.open("filesystem:http://c9.io/temporary/index.html", "preview", "", true)
+      
+      loadFiles = (fs) ->
+        remaining = 0
+        gister.gist.files.each (file) ->
+          remaining++
+          fs.root.getFile file.get("filename"), {create: true}, (fileEntry) ->
+            fileEntry.createWriter (fileWriter) ->
+              fileWriter.onwriteend = (e) -> runPreview() unless --remaining
+              fileWriter.onerror = errorHandler
+              
+              content = file.get("content")
+              console.log "Blob", file.get("filename"), content
+              gister.gist.files.each (file) ->
+                content = content.replace file.get("filename"), "filesystem:http://c9.io/temporary/#{file.get('filename')}"
+              
+              bb = new BlobBuilder()
+              bb.append(content)
+              
+              fileWriter.write bb.getBlob(file.get("type"))
+            , errorHandler
+          , errorHandler
+
+      requestFileSystem TEMPORARY, 5 * 1024 * 1024, loadFiles, errorHandler
 
 lumbar.root.attach "gister", modelView: new GisterView

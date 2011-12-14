@@ -189,7 +189,7 @@ class GisterView extends lumbar.View
               content = file.get("content")
               console.log "Blob", file.get("filename"), content
               gister.gist.files.each (file) ->
-                content = content.replace file.get("filename"), "filesystem:http://c9.io/temporary/#{file.get('filename')}"
+                content = content.replace file.get("filename"), "filesystem:#{window.location.protocol}//#{window.location.host}/temporary/#{file.get('filename')}"
               
               bb = new BlobBuilder()
               bb.append(content)

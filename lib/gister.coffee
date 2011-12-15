@@ -4,7 +4,14 @@ window.console ||=
 window.gister = 
   version: "0.0.1"
   start: ->
-    lumbar.start()
+    console.log "gister.start"
+    
+    gister.state.set
+      mode: "edit"
+    
+    #Backbone.history.start()
+    
+###
       
 gister.router = new class extends Backbone.Router
   routes:
@@ -217,3 +224,5 @@ class GisterView extends lumbar.View
       requestFileSystem TEMPORARY, 5 * 1024 * 1024, loadFiles, errorHandler
 
 lumbar.root.attach "gister", modelView: new GisterView
+
+###

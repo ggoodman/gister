@@ -1,6 +1,6 @@
 ((lumbar) ->
   ###
-  Define Lumbar model classes
+  Define Lumbar view classes
   ###
   
   class lumbar.Collection extends Backbone.Collection

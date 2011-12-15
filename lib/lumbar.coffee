@@ -23,4 +23,3 @@ class lumbar.Emitter
     listener(args...) for listener in @listeners[event] if @listeners[event]
     @
 
-

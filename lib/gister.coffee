@@ -126,6 +126,8 @@ class EditorView extends lumbar.View
             mode = self.modes[file.get("language") or "text"] or self.modes.text
             self.sessions[filename] = new EditSession(file.get("content"))
             self.sessions[filename].setMode(new mode)
+            self.sessions[filename].setTabSize(2)
+            self.sessions[filename].setUseSoftTabs(true)
           
           self.editor.setSession self.sessions[filename]
 
@@ -173,28 +175,32 @@ class GisterView extends lumbar.View
         throw new Error("FS: #{msg}")
       
       runPreview = ->
-        url = resolveLocalFilesystemURL(gister.state.get("currentFile"))
-        console.log "Resolved", gister.state.get("currentFile"), "to", url
-        window.open("filesystem:#{window.location.protocol}//#{window.location.host}/temporary/index.html", "preview", "", true)
+        dir = gister.gist.get
+        window.open("filesystem:#{window.location.protocol}//#{window.location.host}/temporary/#{gister.gist.id}/index.html", "preview", "", true)
       
       loadFiles = (fs) ->
         remaining = 0
         gister.gist.files.each (file) ->
           remaining++
-          fs.root.getFile file.get("filename"), {create: true}, (fileEntry) ->
-            fileEntry.createWriter (fileWriter) ->
-              fileWriter.onwriteend = (e) -> runPreview() unless --remaining
-              fileWriter.onerror = errorHandler
-              
-              content = file.get("content")
-              console.log "Blob", file.get("filename"), content
-              gister.gist.files.each (file) ->
-                content = content.replace file.get("filename"), "filesystem:#{window.location.protocol}//#{window.location.host}/temporary/#{file.get('filename')}"
-              
-              bb = new BlobBuilder()
-              bb.append(content)
-              
-              fileWriter.write bb.getBlob(file.get("type"))
+          fs.root.getDirectory gister.gist.get("id"), {create: true}, (dirEntry) ->
+            dirEntry.getFile file.get("filename"), {create: true}, (fileEntry) ->
+              fileEntry.createWriter (fileWriter) ->
+                fileWriter.onwriteend = (e) -> runPreview() unless --remaining
+                fileWriter.onerror = errorHandler
+                
+                content = file.get("content")
+                console.log "Blob", file.get("filename"), content
+                gister.gist.files.each (file) ->
+                  content = content.replace file.get("filename"), "filesystem:#{window.location.protocol}//#{window.location.host}/temporary/#{gister.gist.id}/#{file.get('filename')}"
+                
+                bb = new BlobBuilder()
+                bb.append(content)
+                
+                blob = bb.getBlob(file.get("type"))
+                
+                fileWriter.truncate blob.size if fileEntry.size > blob.size
+                fileWriter.write blob
+              , errorHandler
             , errorHandler
           , errorHandler
 

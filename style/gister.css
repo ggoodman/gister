@@ -6,88 +6,19 @@ html, body {
   overflow: hidden;
 }
 
-#topbar {
-  position: absolute;
-  left: 0; top: 0; right: 0;
-  height: 30px;
-  background: black;
-  padding-left: 31px;
+.topbar .fill {
+  height: 40px;
 }
 
-#topbar span {
-  font-weight: bold;
-  font-size: 30px;
-  line-height: 30px;
-  color: #ccc;
-  margin: 0 8px;
-}
-
-#toggle {
-  position: absolute;
-  top: -30px;
-  height: 30px;
-  width: 30px;
-  background: black;
-  display: none;
-}
-
-#toggle + label {
-  display: block;
-  position: absolute;
-  top: -30px;
-  height: 30px;
-  width: 30px;
-  left: 0;
-  background-color: black;
-  border: 0;
-  margin: 0; padding: 0;
-  border-right: 1px solid #ccc;
-}
-#toggle + label:hover {
-  cursor: pointer;
-  background-color: #111;
-}
-
-#toggle + label span {
-  -webkit-transition: all 1s ease-in-out;
-  -moz-transition: all 1s ease-in-out;
-  -o-transition: all 1s ease-in-out;
-	-ms-transition: all 1s ease-in-out;
-	transition: all 1s ease-in-out;
-  display: block;
-  width: 5px;
-  height: 30px;
-  background-color: #333;
-}
-
-#toggle + label:hover span {
-  width: 25px;
-}
-
-#toggle:checked + label span {
-  width: 25px;
-}
-
-#toggle:checked + label:hover span {
-  width: 5px;
-}
-
-#toggle ~ #sidebar {
-  width: 0;
-}
-
-#toggle:checked ~ #sidebar {
-  width: 180px;
+.topbar .brand {
+  width: 160px;
+  text-align: center;
 }
 
 #editarea {
   position: absolute;
   width: 100%;
-  left: 0; top: 30px; right: 0; bottom: 0;
-}
-
-#toggle:checked ~ #editorC {
-  left: 180px;
+  left: 0; top: 40px; right: 0; bottom: 0;
 }
 
 #sidebar {
@@ -100,9 +31,10 @@ html, body {
   position: absolute;
   left: 0;
   top: 0;
-  width: 180px;
+  width: 170px;
   bottom: 0;
   overflow: hidden;
+  padding: 5px;
 }
 
 #sidebar .search {
@@ -124,6 +56,51 @@ html, body {
   width: 100%;
 }
 
+#sidebar summary {
+  font-size: 20px;
+  line-height: 20px;
+}
+
+#sidebar summary a {
+  font-size: 10px;
+}
+
+#sidebar .ops {
+  float: right;
+  display: none;
+  font-weight: normal;
+}
+
+#sidebar li:hover .ops {
+  display: block;
+}
+
+#sidebar details {
+  margin: 15px 0;
+}
+
+#sidebar ul.files {
+  list-style: none;
+  margin: 0; padding: 0;
+}
+
+#sidebar .files li {
+  margin: 0; padding: 0 0 0 20px;
+}
+
+#sidebar .files li.active {
+  margin: 0 -5px;
+  padding: 0 5px 0 25px;
+  font-weight: bold;
+  background-color: #aaa;
+}
+
+#sidebar .files li:hover {
+  cursor: pointer;
+  color: black;
+}
+
+
 #editorC {
   background: white;
   -webkit-transition: all 1s ease-in-out;
@@ -132,7 +109,7 @@ html, body {
 	-ms-transition: all 1s ease-in-out;
 	transition: all 1s ease-in-out;
   position: absolute;
-  left: 0;
+  left: 180px;
   top: 0;
   right: 0;
   bottom: 0;
@@ -143,13 +120,4 @@ html, body {
   position: absolute;
   width: 100%;
   height: 100%;
-}
-
-#editor .ace_scroller {
-  right: 0 !important;
-  width: auto !important;
-}
-
-.files .active {
-  background-color: red;
 }

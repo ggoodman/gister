@@ -1,3 +1,6 @@
+window.console ||=
+  log: ->
+
 window.gister = 
   version: "0.0.1"
   start: ->
@@ -60,7 +63,11 @@ gister.state = new class extends lumbar.Model
 
 class GistFileView extends lumbar.View
   template: ->
-    li -> @filename
+    li -> 
+      a ".filename", href: "##{gister.gist.id}/#{@filename}", @filename
+      div ".ops", ->
+        a ".rename", href: "##{gister.gist.id}/#{@filename}/rename", title: "Rename file", "R"
+        a ".delete", href: "##{gister.gist.id}/#{@filename}/delete", title: "Delete file", "D"
   
   events:
     "click": (e) -> gister.state.set currentFile: $(e.target).text()
@@ -73,7 +80,7 @@ class GistFileView extends lumbar.View
   checkActive: =>
     currentFile = gister.state.get("currentFile")
     
-    if currentFile == @$.text() then @$.addClass("active")
+    if currentFile == @$.find(".filename").text() then @$.addClass("active")
     else @$.removeClass("active")
 
 class GistFileListView extends lumbar.CollectionView
@@ -90,7 +97,9 @@ class SidebarView extends lumbar.View
     div ".search", ->
       input name: "gistId", value: @id
     details open: "open", ->
-      summary "Files"
+      summary ->
+        text "Files"
+        a ".pull-right", href: "##{gister.gist.id}/Unnamed", "Add"
       ul ".files", ->
     details ->
       summary "Mixins"
@@ -141,13 +150,14 @@ class GisterView extends lumbar.View
     mountPoint: "#editor"
     
   template: ->
-    header "#topbar", ->
-      span "Gister"
-      button ".btn.pull-right", "Preview"
+    div ".topbar", ->
+      div ".fill", ->
+        h3 ".brand", "Gister"
+        ul ".nav", ->
+          li ".active", ->
+            a href: "#", -> "Edit"
+        button ".btn.pull-right", "Preview"
     div "#editarea", ->
-      input "#toggle", type: "checkbox", checked: "checked"
-      label for: "toggle", ->
-        span ""
       aside "#sidebar", ->
       div "#editorC", ->
         div "#editor", ->

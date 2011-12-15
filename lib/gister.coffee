@@ -9,7 +9,9 @@ window.gister =
     gister.state.set
       mode: "edit"
     
-    #Backbone.history.start()
+    Backbone.history.start()
+    
+    gister.view.render()
     
 ###
       

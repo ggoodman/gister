@@ -1,80 +1,104 @@
 ((lumbar) ->
-
+  
+  lumbar.views = {}
+  
+  lumbar.view = (name, definition) ->
+    if definition?
+      cls = class extends lumbar.View
+      _.extend cls.prototype, definition
+      lumbar.views[name] = cls
+    
+    lumbar.views[name]
+  
   class lumbar.View extends lumbar.Emitter
-    @attachDefaults:
-      mountPoint: "@"
-      mountMethod: "html"
-      type: "one"
-  
-    @attach: (name, options = {}) ->
-      @attachedViews ?= {}
-      @attachedViews[name] = _.defaults options, @attachDefaults
-  
-    mountMethod: "html" # Replace contents with rendered template
-    renderEvents: "all" # Re-render on 'all' events
+    mountPoint: "<div></div>"
     template: ->
     initialize: ->
-  
-    setMountPoint: (@mountPoint) ->
-    setMountMethod: (@mountMethod) ->
+    series: do ->
+      counter = 0
+      (inc = true) -> if inc then counter++ else counter
     
-    render: =>
-      @$ = $(CoffeeKup.render @template, @model?.getViewModel())
-      if @mountPoint
-        if @$.size() then $(@mountPoint)[@mountMethod](@$)
-        else @$ = $(@mountPoint)
-        @trigger "mounted"
-      @trigger "rendered"
-      @renderAttachedViews()
+    destroy: ->
+      @resetDependents()
+      @$.remove()
+      @
+      
+    resetDependents: ->
+      for model in @dependentModels
+        console.log "unbinding", model
+        model.unbind "all", @render
+      
+      for view in @dependentViews
+        view.destroy()
+        
+      @dependentModels = []
+      @dependentViews = []
+      
+      @      
+    
+    render: (locals = {}) =>
+      lumbar.renderStack ||= []
+      lumbar.renderStack.push [{id: 0: view: @}]
+      
+      lumbar.attachStack ||= []
+      lumbar.attachStack.push @
+      
+      @resetDependents()
+      
+      @$ ||= $(@mountPoint)
+      
+      @$.html CoffeeKup.render @template, _.extend(locals, parent: @),
+        hardcode:
+          $v: (name, locals = {}) ->
+            throw new Error("Invalid or missing view: #{name}") unless lumbar.views[name]
+            top = lumbar.renderStack.length - 1
+            entry = 
+              view: new lumbar.views[name]
+            lumbar.renderStack[top].push(entry)
+            
+            @parent.dependentViews.push(entry.view)
+
+            locals = locals.getViewModel() if _.isFunction(locals.getViewModel)
+            
+            entry.id = entry.view.series()
+            entry.view.parent = @parent
+            entry.view.render(locals)
+            # Return a placeholder div
+            div id: "mp-#{entry.id}", ->
+          $m: (path) ->
+            path = path.split(".")
+            model = window
+            
+            for step in path
+              model = model[step]
+            
+            if model.bind?
+              @parent.dependentModels.push(model)
+              view = @parent
+              model.bind "all", _.throttle((-> view.render()), 100)
+            
+            model
+      
+      deferred = lumbar.renderStack.pop()
+      for {id, view} in deferred
+        $marker = $("#mp-#{id}", @$)
+        if $marker.size()
+          $marker.before view.$
+          $marker.remove()
+      
+      @trigger "render", @
+      
+      unless lumbar.renderStack.length
+        while lumbar.attachStack.length
+          view = lumbar.attachStack.pop()
+          view.trigger "attach", view
+          
       @bindEvents()
       @
   
     destroy: =>
-      #@destroyAttachedViews()
       @$.detach()
-  
-    renderAttachedView: (name, options) ->
-      # Check to see if the modelView needs to be lazy-loaded
-      if options.createModelView and not options.modelView
-        throw new Error("createModelView must be a function") unless _.isFunction(options.createModelView)
-        options.modelView = options.createModelView.call(@)
-  
-      throw new Error("Missing or invalid modelView") unless options.modelView instanceof lumbar.View
       
-      options.modelView.setMountPoint if options.mountPoint is "@" then @$ else @$.filter(options.mountPoint).add(options.mountPoint)
-      options.modelView.setMountMethod options.mountMethod
-      options.modelView.render()
-      
-      options.modelView
-  
-    renderAttachedViewList: (name, options) ->
-      if options.createIterator and not options.iterator
-        throw new Error("createIterator must be a function") unless _.isFunction(options.createIterator)
-        options.iterator = options.createIterator.call(@)
-  
-      throw new Error("Missing or invalid iterator") unless _.isFunction(options.iterator)
-      
-      view.destroy() for view in @views[name] if @views[name]
-      
-      ret = []
-      
-      self = @
-      options.iterator.call @, name, options, (modelView) ->
-        ret.push self.renderAttachedView name, _.extend {}, self.attachDefaults, options,
-          type: "one"
-          modelView: modelView
-
-      ret
-  
-    renderAttachedViews: ->
-      if @attachedViews
-        console.log "ATTACHED", @attachedViews
-        for name, options of @attachedViews
-          if options.type is "one" then @views[name] = @renderAttachedView(name, options)
-          else if options.type is "many" then @views[name] = @renderAttachedViewList(name, options)
-          else throw new Error("Invalid attachment type: #{options.type}")
-      @
-    
     bindEvents: ->
       if @events
         for mapping, callback of @events
@@ -90,30 +114,11 @@
       @
 
     constructor: ({@model, @collection} = {}) ->
-      # Transfer over things set-up through constructor-level methods
-      @attachDefaults = @constructor.attachDefaults
-      @attach = @constructor.attach
-      @attachedViews = @constructor.attachedViews
+      @dependentModels = []
+      @dependentViews = []
       
-      @views = []
-      
-      if @model then @model.bind(event, @render) for event in @renderEvents.split(/[, ]/)
-      @collection.bind event, @render for event in @renderEvents.split(/[, ]/) if @collection?
-  
       @initialize(arguments...)
-  
-  class lumbar.CollectionView extends lumbar.View
-    @attachDefaults:
-      type: "many"
-      mountPoint: "@"
-      mountMethod: "append"
-      iterator: (name, options, cb) ->
-        # Return a function that iterates through the collection
-        throw new Error("Invalid or missing modelViewClass") unless options.modelViewClass
-        @collection.each (model) -> cb(new options.modelViewClass(model: model))
       
-  lumbar.root = new class extends lumbar.View
-    $: $("body")
-    render: => @renderAttachedViews()
+  lumbar.root = $("body")
 
 )(window.lumbar)

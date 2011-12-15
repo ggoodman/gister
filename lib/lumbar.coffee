@@ -3,9 +3,11 @@ window.lumbar =
   start: (mountPoint) ->
     console.log "lumbar.start", arguments...
           
-    lumbar.root.render()
-    
     Backbone.history.start()
+    
+    console.log "View", lumbar.view.render()
+    
+    gister.view.render().$.appendTo("body")
 
 _.mixin obj: (key, value) ->
   hash = {}

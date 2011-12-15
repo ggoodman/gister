@@ -5,19 +5,23 @@
   
   gister.router = new class extends Backbone.Router
     routes:
-      "edit/:id/:filename"  : "edit"
-      "edit/:id"            : "edit"
-      ":gist"               : "preview"
+      "edit/(\d+)/:filename"  : "edit"
+      "edit/(\d+)"            : "edit"
+      "edit/:filename"        : "create"
+      "edit/?"                : "create"
+      ":gist"                 : "preview"
     
+    create: (filename) ->
+      gister.gist.reset() if gister.gist.id
+      gister.state.set active: (filename or gister.gist.files.getNewFilename()) if filename and filename isnt gister.state.get("active")
+      gister.state.set mode: "create"
     
     edit: (id, filename) ->
-      gister.gist.load id, ->
-        if filename
-          unless buffer = gister.buffers.get(filename)
-            gister.buffers.add
-              
-          then gister.buffers.get(filename).activate()
-      gister.state.set mode: "edit"
+      if id isnt gister.gist.id
+        gister.gist.fetch id, ->
+          gister.state.set active: (filename or gister.gist.files.getNewFilename())
+      if gister.state.get("mode") isnt "edit"
+        gister.state.set mode: "edit"
     
     preview: (id) ->
       gister.state.set model: "preview"

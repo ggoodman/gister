@@ -6,13 +6,11 @@ window.gister =
   start: ->
     console.log "gister.start"
     
-    gister.state.set
-      mode: "edit"
-    
     Backbone.history.start()
     
     gister.view.render()
     
+
 ###
       
 gister.router = new class extends Backbone.Router

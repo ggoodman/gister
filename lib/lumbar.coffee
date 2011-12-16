@@ -25,3 +25,15 @@ class lumbar.Emitter
     listener(args...) for listener in @listeners[event] if @listeners[event]
     @
 
+console.log "Backbone.Router", Backbone.Router
+
+class lumbar.Router extends Backbone.Router
+  routes: []
+  constructor: ->
+    routes = @routes
+    @routes = []
+    super()
+    
+    for route, name of @routes
+      @route(new RegExp("^#{route}", "i"), name, @[name])
+    

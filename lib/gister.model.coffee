@@ -24,8 +24,8 @@
       "Untitled#{index}"
 
     getNewFileUrl: (index = "") ->
-      if gister.gist.id then "#edit/#{gister.gist.id}/#{@getNewFilename()}"
-      else "#edit/#{@getNewFilename()}"
+      if gister.gist.id then "##{gister.gist.id}/#{@getNewFilename()}"
+      else "##{@getNewFilename()}"
       
   gister.gist = new class extends lumbar.Model
     defaults:
@@ -36,9 +36,6 @@
       
     initialize: ->
       @files = new GistFileCollection()
-      @files.add
-        filename: "Untitled"
-        language: "text"
       
       self = @
       gister.state.bind "change:active", ->
@@ -52,7 +49,7 @@
       @set @defaults
       @files.reset()
 
-    fetch: (@id) ->
+    fetch: (@id, cb = ->) ->
       self = @
       self.clear()
       if @id
@@ -61,11 +58,14 @@
         $.ajax "https://api.github.com/gists/#{self.id}",
           dataType: "jsonp"
           success: (json) ->
-            reset 
+            self.clear()
             self.set(json.data)
             self.files.reset _.values(json.data.files)
             self.trigger "load:success"
-          error: -> self.trigger "load:error"
+            cb(true)
+          error: ->
+            self.trigger "load:error"
+            cb()
 
   ###
   gister.buffers

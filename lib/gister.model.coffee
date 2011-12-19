@@ -16,6 +16,7 @@
     
   class GistFileCollection extends lumbar.Collection
     model: GistFile
+    sortBy: (model) -> model.get("filename")
     initialize: ->
       @bind "reset", -> console.log "RESET", arguments...
 
@@ -67,39 +68,7 @@
             self.trigger "load:error"
             cb()
 
-  ###
-  gister.buffers
-  
-  class BufferModel extends lumbar.Model
-    language:
-      "txt"     : "text"
-      "js"      : "js"
-      "coffee"  : "CoffeeScript"
-      "md"      : "Markdown"
-      "html"    : "HTML"
-      "css"     : "css"
-      
-    defaults:
-      title: ""
-      content: ""
-      type: "text/plain"
-      language: ""
-      
-  
-  gister.buffers = new class extends lumbar.Collection
-    model: BufferModel
-    initialize: ->
-      # This happens only once at load
-      @add
-        title: "Untitled"
-        content: ""
-        type: "text/plain"
-        
-    getNewFileUrl: (index = "") ->
-      index = parseInt(index, 10) + 1 while @get("Untitled#{index}")
-      
-      if gister.gist.id then "#edit/#{gister.gist.id}/Untitled#{index}"
-      else "#edit/Untitled#{index}"
-  
-  ###
+  gister.user = new class extends lumbar.Model
+    id: "1"
+
 )(window.gister)

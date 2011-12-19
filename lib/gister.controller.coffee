@@ -15,9 +15,11 @@
       else @create(gist)
     
     create: (filename) ->
-      console.log "gister.router.create", arguments...
+      console.log "gister.router.create", arguments..., gister.state.get("active"), filename and (filename is gister.state.get("active")), filename
       gister.gist.reset() if gister.gist.id
-      gister.state.set active: (filename or gister.gist.files.getNewFilename()) unless filename and filename is gister.state.get("active")
+      filename ||= gister.gist.files.getNewFilename()
+      unless filename and (filename is gister.state.get("active"))
+        gister.state.set active: filename
       gister.state.set mode: "create"
     
     edit: (id, filename) ->

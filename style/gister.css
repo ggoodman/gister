@@ -8,10 +8,10 @@ html, body {
 
 .topbar .fill {
   height: 40px;
+  padding: 0 40px;
 }
 
 .topbar .brand {
-  width: 160px;
   text-align: center;
 }
 
@@ -25,7 +25,7 @@ html, body {
   background: #ccc;
   -webkit-transition: all 1s ease-in-out;
   -moz-transition: all 1s ease-in-out;
-	-o-transition: all 1s ease-in-out;
+  -o-transition: all 1s ease-in-out;
 	-ms-transition: all 1s ease-in-out;
 	transition: all 1s ease-in-out;
   position: absolute;
@@ -35,25 +35,6 @@ html, body {
   bottom: 0;
   overflow: hidden;
   padding: 5px;
-}
-
-#sidebar .search {
-  box-sizing: border-box;
-  -o-box-sizing: border-box;
-  -icab-box-sizing: border-box;
-  -khtml-box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-  width: 100%;
-  padding: 5px;
-}
-#sidebar .search input {
-  -o-box-sizing: border-box;
-  -icab-box-sizing: border-box;
-  -khtml-box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-  width: 100%;
 }
 
 #sidebar summary {
@@ -81,7 +62,7 @@ html, body {
 
 #sidebar ul.files {
   list-style: none;
-  margin: 0; padding: 0;
+  margin: 5px 0; padding: 0;
 }
 
 #sidebar .files li {
@@ -100,6 +81,9 @@ html, body {
   color: black;
 }
 
+#sidebar .files a {
+  color: #333;
+}
 
 #editor {
   background: white;

@@ -2,32 +2,52 @@
   ###
   Define view classes
   ###
+
+  lumbar.view "gister.header.userpanel", class extends lumbar.View
+    template: ->
+      ul ".nav.secondary-nav", ->
+        li ".dropdown", ->
+          a ".dropdown-toggle", href: "#", "Username"
+
+
+  lumbar.view "gister.header.login", class extends lumbar.View
+    template: ->
+      form ".pull-right", ->
+        input ".small", type: "text", name: "username", placeholder: "Username"
+        input ".small", type: "password", name: "password", placeholder: "Password"
+        text " "
+        a href: "#login", "Login"
   
-  lumbar.view "gister.header",
+  lumbar.view "gister.header", class extends lumbar.View
     template: ->
       div ".topbar", ->
         div ".fill", ->
           h3 ".brand", "Gister"
           ul ".nav", ->
             li name: "edit", ->
-              a href: "##{$m('gister.gist.id')}/#{$m('gister.state.active')}", name: "edit", "Edit"
+              if $m("gister.gist.id")
+                a href: "##{$m('gister.gist.id')}/#{$m('gister.state.active')}", class: "create edit", name: "edit", "Edit"
+              else
+                a href: "##{$m('gister.state.active')}", class: "create edit", "Edit"
             li name: "preview", ->
-              a href: "#preview/#{gister.gist.id}", name: "preview", "Preview"
+              a href: "#preview/#{gister.gist.id}", class: "preview", "Preview"
+          if $m("gister.user.id")
+            $v("gister.header.userpanel")
+          else
+            $v("gister.header.login")
               
     updateActive: ->
       mode = gister.state.get("mode")
+      console.log "Mode changed", mode, "li a[class~=#{mode}"
       if @$
         @$.find("li").removeClass("active")
-        @$.find("li a[name=#{mode}").parent().addClass("active")
-        
-        console.log "Found", mode, @$.find("li a[name=#{mode}")
+        @$.find("li a[class~=#{mode}]").parent().addClass("active")
     
     initialize: ->
-      console.log "Initialized gister.header"
       gister.state.bind "change:mode", => @updateActive()
       @bind "render", => @updateActive()
   
-  lumbar.view "gister.sidebar.filelist.file",
+  lumbar.view "gister.sidebar.filelist.file", class extends lumbar.View
     mountPoint: "<li>"
     template: ->
       a { href: (if gister.gist.id then "##{gister.gist.id}/#{@filename}" else "##{@filename}"), title: @filename }, @filename
@@ -39,17 +59,18 @@
         @$.addClass("active") if $("a", @$).attr("title") == active
       
     initialize: ->
-      console.log "Initialized gister.sidebar.filelist.file"
       gister.state.bind "change:active", => @updateActive()
       @bind "render", => @updateActive()
       
-  lumbar.view "gister.sidebar.filelist",
+  lumbar.view "gister.sidebar.filelist", class extends lumbar.View
     mountPoint: "<ul>"
+    mountArgs:
+      class: "files"
     template: ->
-      $m("gister.gist.files").each (file) -> $v("gister.sidebar.filelist.file", file)
+      $c("gister.gist.files", "gister.sidebar.filelist.file")
   
           
-  lumbar.view "gister.sidebar",
+  lumbar.view "gister.sidebar", class extends lumbar.View
     template: ->
       details ".files", open: "open", ->
         summary ->
@@ -58,7 +79,7 @@
         $v("gister.sidebar.filelist")
         
         
-  lumbar.view "gister.editor",
+  lumbar.view "gister.editor", class extends lumbar.View
     modes:
       text:         require("ace/mode/text").Mode
       HTML:         require("ace/mode/html").Mode
@@ -69,7 +90,7 @@
     template: ->
       div "#editor", ->
         
-    loadActive: ->
+    loadActive: =>
       EditSession = require("ace/edit_session").EditSession
       
       self = @
@@ -90,7 +111,8 @@
 
       self = @
 
-      @bind "attach", ->
+      gister.view.bind "render", ->
+        console.log "self"
         self.editor ||= ace.edit("editor")
         self.loadActive()
 
@@ -99,6 +121,8 @@
   
       gister.state.bind "change:active", ->
         self.loadActive()
+      
+      gister.state.bind "change:mode", self.loadActive
 
   gister.view = new class extends lumbar.View
     mountPoint: "body"

@@ -212,8 +212,7 @@
         for mapping, callback of @events
           [event, selector...] = mapping.split(" ")
           selector = selector.join(" ")
-          callback = if _.isFunction(callback) then callback else =>
-            @trigger callback
+          callback = if _.isFunction(callback) then callback else _.bind(@[callback], @)
           
           if event and selector then @$.delegate selector, event, callback
           else if event then @$.on event, callback

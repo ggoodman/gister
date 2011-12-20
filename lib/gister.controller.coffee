@@ -40,8 +40,12 @@
     preview: (id) ->
       console.log "gister.router.preview", arguments...
       if id isnt gister.gist.id
+        gister.state.set mode: "loading"
         gister.gist.fetch id, ->
-          gister.state.set active: (gister.gist.files.last()?.get("filename") or gister.gist.files.getNewFilename())
-      gister.state.set mode: "preview"
+          gister.state.set
+            active: (gister.gist.files.last()?.get("filename") or gister.gist.files.getNewFilename())
+            mode: "preview"
+      else
+        gister.state.set mode: "preview"
 
 )(window.gister)

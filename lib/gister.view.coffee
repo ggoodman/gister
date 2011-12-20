@@ -6,8 +6,19 @@
   lumbar.view "gister.header.userpanel", class extends lumbar.View
     template: ->
       ul ".nav.secondary-nav", ->
-        li ".dropdown", ->
-          a ".dropdown-toggle", href: "#", "Username"
+        li ".dropdown", "data-dropdown": "dropdown", ->
+          a ".dropdown-toggle", href: "#", ->
+            text $m("gister.user.login")
+          ul ".dropdown-menu", ->
+            li ->
+              a ".logout", href: "#", "Logout"
+    
+    events:
+      "click .logout": (e) ->
+        e.preventDefault()
+        
+        gister.user.clear()
+        eraseCookie("_gst.tok")
 
 
   lumbar.view "gister.header.login", class extends lumbar.View
@@ -16,7 +27,33 @@
         input ".small", type: "text", name: "username", placeholder: "Username"
         input ".small", type: "password", name: "password", placeholder: "Password"
         text " "
-        a href: "#login", "Login"
+        button ".login.btn.small", "Login"
+    
+    events:
+      "click .login": "onClickLogin"
+    
+    onClickLogin: (e) =>
+      console.log "onClickLogin", @, e
+      e.preventDefault()
+      
+      self = @
+      
+      u = self.$.find("[name=username]").val()
+      p = self.$.find("[name=password]").val()
+
+      
+      $.ajax
+        url: "https://api.github.com/authorizations",
+        type: "POST"
+        data: JSON.stringify
+          scopes: [ "gist" ]
+        beforeSend: (xhr) ->
+          xhr.setRequestHeader "Authorization", "Basic " + btoa("#{u}:#{p}")
+        success: (data) ->
+          console.log "Logged in ", data
+          createCookie("_gst.tok", data.token)
+          
+          gister.user.tryLogin()
   
   lumbar.view "gister.header", class extends lumbar.View
     template: ->
@@ -31,7 +68,7 @@
                 a href: "##{$m('gister.state.active')}", class: "create edit", "Edit"
             li name: "preview", ->
               a href: "#preview/#{gister.gist.id}", class: "preview", "Preview"
-          if $m("gister.user.id")
+          if $m("gister.user.login")
             $v("gister.header.userpanel")
           else
             $v("gister.header.login")

@@ -69,6 +69,19 @@
             cb()
 
   gister.user = new class extends lumbar.Model
-    id: "1"
+    initialize: ->
+      @tryLogin()
+    
+    tryLogin: ->
+      self = @
+      if token = readCookie("_gst.tok")
+        console.log "read token", token
+        $.ajax "https://api.github.com/user",
+          dataType: "jsonp"
+          data:
+            access_token: token
+          success: (json) ->
+            self.set(json.data)
+            console.log "USER", json
 
 )(window.gister)

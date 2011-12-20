@@ -123,15 +123,81 @@
         self.loadActive()
       
       gister.state.bind "change:mode", self.loadActive
+  
+  lumbar.view "gister.preview",  class extends lumbar.View     
+    initialize: ->
+      window.requestFileSystem ||= window.webkitRequestFileSystem
+      window.resolveLocalFilesystemURL ||= window.webkitResolveLocalFileSystemURL
+      window.BlobBuilder ||= window.WebKitBlobBuilder
+      
+      self = @
+      
+      errorHandler = (e) ->
+        switch e.code
+          when FileError.QUOTA_EXCEEDED_ERR
+            msg = 'QUOTA_EXCEEDED_ERR'
+          when FileError.NOT_FOUND_ERR
+            msg = 'NOT_FOUND_ERR';
+          when FileError.SECURITY_ERR
+            msg = 'SECURITY_ERR';
+          when FileError.INVALID_MODIFICATION_ERR
+            msg = 'INVALID_MODIFICATION_ERR';
+          when FileError.INVALID_STATE_ERR
+            msg = 'INVALID_STATE_ERR';
+          else
+            msg = 'Unknown Error';
+        throw new Error("FS: #{msg}")
+      
+      runPreview = ->
+        $content = $("#content")
+        $iframe = $("<iframe />")
+          .attr("src", "filesystem:#{window.location.protocol}//#{window.location.host}/temporary/#{gister.gist.id}/index.html")
+          .css(border: 0)
+          .width($content.width())
+          .height($content.height())
+        
+        self.$.html $iframe
+        
+        #self.$.attr("src", "filesystem:#{window.location.protocol}//#{window.location.host}/temporary/#{gister.gist.id}/index.html")
+      
+      loadFiles = (fs) ->
+        remaining = 0
+        gister.gist.files.each (file) ->
+          remaining++
+          fs.root.getDirectory gister.gist.get("id"), {create: true}, (dirEntry) ->
+            dirEntry.getFile file.get("filename"), {create: true}, (fileEntry) ->
+              fileEntry.createWriter (fileWriter) ->
+                fileWriter.onwriteend = (e) -> runPreview() unless --remaining
+                fileWriter.onerror = errorHandler
+                
+                content = file.get("content")
+                console.log "Blob", file.get("filename"), content
+                gister.gist.files.each (file) ->
+                  content = content.replace file.get("filename"), "filesystem:#{window.location.protocol}//#{window.location.host}/temporary/#{gister.gist.id}/#{file.get('filename')}"
+                
+                bb = new BlobBuilder()
+                bb.append(content)
+                
+                blob = bb.getBlob(file.get("type"))
+                
+                fileWriter.truncate blob.size if fileEntry.size > blob.size
+                fileWriter.write blob
+              , errorHandler
+            , errorHandler
+          , errorHandler
+
+      requestFileSystem TEMPORARY, 5 * 1024 * 1024, loadFiles, errorHandler      
 
   gister.view = new class extends lumbar.View
     mountPoint: "body"
     template: ->
       header "#topbar", -> $v("gister.header")
       div "#content", ->
-        if $m("gister.state.mode") in ["edit", "create"]
-          aside "#sidebar", -> $v("gister.sidebar")
-          div "#editarea", -> $v("gister.editor")
-    
+        switch $m("gister.state.mode")
+          when "edit", "create"
+            aside "#sidebar", -> $v("gister.sidebar")
+            div "#editarea", -> $v("gister.editor")
+          when "preview"
+            $v("gister.preview")
 
 )(window.gister)

@@ -49,6 +49,34 @@
       @clear()
       @set @defaults
       @files.reset()
+    
+    handleJson: (data) ->
+      @set(data)
+      @files.reset _.values(data.files)
+    
+    save: =>
+      self = @
+      if @id
+        self.trigger "save:start"
+        
+        data = 
+          files: {}
+          
+        self.files.each (file) ->
+          data.files[file.get("filename")] =
+            content: file.get("content")
+        
+        console.log "Saving data", data
+        
+        $.ajax "https://api.github.com/gists/#{self.id}?access_token=#{readCookie('_gst.tok')}",
+          dataType: "json"
+          type: "patch"
+          data: JSON.stringify(data)
+          success: (data) ->
+            console.log "JSON came back"
+            self.handleJson(data)
+            self.trigger "save:success"
+        
 
     fetch: (@id, cb = ->) ->
       self = @
@@ -60,8 +88,7 @@
           dataType: "jsonp"
           success: (json) ->
             self.clear()
-            self.set(json.data)
-            self.files.reset _.values(json.data.files)
+            self.handleJson(json.data)
             self.trigger "load:success"
             cb(true)
           error: ->

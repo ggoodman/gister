@@ -8,7 +8,7 @@ html, body {
 
 .topbar .fill {
   height: 40px;
-  padding: 0 40px;
+  padding: 0 10px 0 40px;
 }
 
 .topbar .brand {
@@ -19,22 +19,19 @@ html, body {
   position: absolute;
   width: 100%;
   left: 0; top: 40px; right: 0; bottom: 0;
+  overflow: hidden;
 }
 
 #sidebar {
   background: #ccc;
-  -webkit-transition: all 1s ease-in-out;
-  -moz-transition: all 1s ease-in-out;
-  -o-transition: all 1s ease-in-out;
-	-ms-transition: all 1s ease-in-out;
-	transition: all 1s ease-in-out;
   position: absolute;
   left: 0;
   top: 0;
-  width: 170px;
+  width: 169px;
   bottom: 0;
   overflow: hidden;
   padding: 5px;
+  border-right: 1px solid black;
 }
 
 #sidebar summary {
@@ -70,10 +67,22 @@ html, body {
 }
 
 #sidebar .files li.active {
-  margin: 0 -5px;
-  padding: 0 5px 0 25px;
   font-weight: bold;
-  background-color: #aaa;
+  margin-right: -5px;
+  background-color: rgba(55,120,194,0.3);
+	border-radius: 5px 0 0 5px;
+	box-shadow: 0 1px 2px rgba(0,0,0,0.2) inset, 0 1px 0 rgba(255,255,255,0.5);
+	color: #3d5979;
+	text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+
+#sidebar .files li {
+  position: relative;
+}
+
+#sidebar .files li .ops {
+  display: none;
+  position: relative;
 }
 
 #sidebar .files li:hover {
@@ -81,15 +90,36 @@ html, body {
   color: black;
 }
 
+#sidebar .files li:hover .ops {
+  display: block;
+}
+
 #sidebar .files a {
   color: #333;
+  white-space: nowrap;
+}
+
+#fileops {
+  position: absolute;
+  left: 180px;
+  right: 0;
+  top: 0;
+  height: 39px;
+  background: #ddd;
+  line-height: 1;
+  padding-right: 5px;
+  border-bottom: 1px solid #999;
+}
+
+#fileops > div > .btn {
+  margin: 5px 0 5px 5px;
 }
 
 #editor {
   background: white;
   position: absolute;
   left: 180px;
-  top: 0;
+  top: 40px;
   right: 0;
   bottom: 0;
 }

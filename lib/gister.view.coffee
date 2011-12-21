@@ -160,7 +160,14 @@
         self.loadActive()
       
       gister.state.bind "change:mode", self.loadActive
-  
+
+  lumbar.view "gister.fileops",  class extends lumbar.View     
+    template: ->
+      button ".btn.save.primary", "Save"
+    
+    events:
+      "click .save": gister.gist.save
+
   lumbar.view "gister.preview",  class extends lumbar.View     
     initialize: ->
       window.requestFileSystem ||= window.webkitRequestFileSystem
@@ -233,6 +240,7 @@
         switch $m("gister.state.mode")
           when "edit", "create"
             aside "#sidebar", -> $v("gister.sidebar")
+            div "#fileops", -> $v("gister.fileops")
             div "#editarea", -> $v("gister.editor")
           when "preview"
             $v("gister.preview")

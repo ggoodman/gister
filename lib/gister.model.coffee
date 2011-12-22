@@ -60,8 +60,9 @@
         filename = old_filename or file.id
         files[filename] = { content: file.get("content") }
         files[filename].filename = file.id
-      for filename, file in @saved.files
-        files[filename] = null unless files[filename]
+      if @saved
+        for filename, file in @saved.files
+          files[filename] = null unless files[filename]
       files
       
     defaults:
@@ -94,10 +95,13 @@
       params.data = JSON.stringify(model.toJSON()) if method in ["create", "update"]
       
       jQuery.ajax _.extend(params, options)
+      
+    destroy: ->
+      super()
+        .then -> window.location.hash = ""
     
     parse: (json) ->
       @files.reset _.values(json.files)
-      delete json.files
       json.owned = (json.user and json.user.id == gister.user.id) or false
       json
     

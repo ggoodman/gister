@@ -46,7 +46,9 @@
         gister.gist.reset({id})
         dfd = gister.gist.fetch()
           .done -> self.activateFile filename or gister.gist.files.last()?.get("filename") or gister.gist.files.getNewFilename()
-          #.fail -> alert "WTFBBQ"
+          .fail ->
+            alert "No such gist"
+            self.activateFile()
       else if filename
         @activateFile filename
 

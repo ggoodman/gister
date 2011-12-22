@@ -3,6 +3,7 @@
   Define view classes
   ###
 
+
   lumbar.view "gister.header.userpanel", class extends lumbar.View
     template: ->
       ul ".nav.secondary-nav", ->
@@ -89,7 +90,8 @@
     template: ->
       div ".fileops", ->
         a ".rename", { href: "#", name: @filename }, "R"
-      a { href: (if gister.gist.id then "##{gister.gist.id}/#{@filename}" else "##{@filename}"), title: @filename }, @filename
+        a ".delete", { href: "#", name: @filename }, "X"
+      a ".filename", { href: (if gister.gist.id then "##{gister.gist.id}/#{@filename}" else "##{@filename}"), title: @filename }, @filename
     
     events:
       "click .rename": (e) ->
@@ -99,12 +101,17 @@
         
         if renamed and renamed isnt filename
           gister.gist.files.get(filename).rename(renamed)
-    
+      "click .delete": (e) ->
+        e.preventDefault()
+        
+        if "delete" == prompt "Type 'delete' to remove this file:"
+          gister.gist.files.remove gister.gist.files.get($(@).attr("name"))
+          gister.router.activateFile gister.gist.files.getNewFilename() unless gister.gist.files.length
     updateActive: ->
       active = gister.state.get("active")
       if @$
         @$.removeClass("active")
-        @$.addClass("active") if $("a", @$).attr("title") == active
+        @$.addClass("active") if $("a.filename", @$).attr("title") == active
       
     initialize: ->
       gister.state.bind "change:active", => @updateActive()
@@ -144,15 +151,24 @@
       self = @
       if filename = gister.state.get("active")
         if file = gister.gist.files.get(filename)
-          console.log "Session changed", file, filename
           unless self.sessions[filename]
             mode = self.modes[file.get("language") or "text"] or self.modes.text
             self.sessions[filename] = new EditSession(file.get("content") or "")
             self.sessions[filename].setMode(new mode)
             self.sessions[filename].setTabSize(2)
             self.sessions[filename].setUseSoftTabs(true)
+            
+            self.sessions[filename].on "change", ->
+              file.set content: self.sessions[filename].getValue()
           
           self.editor.setSession self.sessions[filename]
+    
+    refreshBuffers: =>
+      self = @
+      
+      gister.gist.files.each (file) ->
+        self.sessions[file.id].setValue(file.get("content")) if self.sessions[file.id]
+      
         
     initialize: ->
       @sessions = {}
@@ -170,17 +186,23 @@
       gister.state.bind "change:active", ->
         self.loadActive()
       
+      gister.gist.bind "change:updated_at", self.refreshBuffers        
+      
       gister.state.bind "change:mode", self.loadActive
 
   lumbar.view "gister.fileops",  class extends lumbar.View     
     template: ->
-      button ".btn.save.primary", "Save" if $m("gister.gist.owned")
-      button ".btn.fork.primary", "Fork"
-      button ".btn.delete.danger.pull-right", "Delete"
+      if $m("gister.gist.owned")
+        button ".btn.save.primary", "Save"
+        if $m("gister.gist.id")
+          button ".btn.delete.danger.pull-right", "Delete"
+      else
+        button ".btn.fork.primary", "Fork"
     
     events:
-      "click .save": gister.gist.save
-      "click .fork": gister.gist.fork
+      "click .save": -> gister.gist.save()
+      "click .fork": -> gister.gist.fork()
+      "click .delete": -> gister.gist.destroy() if "delete" == prompt "Type 'delete' to confirm deletion:"
 
   lumbar.view "gister.preview",  class extends lumbar.View     
     initialize: ->

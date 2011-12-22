@@ -68,6 +68,7 @@
     defaults:
       id: ""
       description: ""
+      owned: true
       
     initialize: ->
       @files = new GistFileCollection()
@@ -102,7 +103,7 @@
     
     parse: (json) ->
       @files.reset _.values(json.files)
-      json.owned = (json.user and json.user.id == gister.user.id) or false
+      json.owned = (gister.user.id and json.user and json.user.id == gister.user.id) or false
       json
     
     reset: (attrs = {}) ->

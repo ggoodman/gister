@@ -19,7 +19,8 @@
       # Avoid firing unnecessary callbacks
       unless filename is gister.state.get("active")
         gister.state.set active: filename
-        window.location.hash = if gister.gist.id then "##{gister.gist.id}/#{gister.state.get('active')}" else "##{gister.state.get('active')}"
+        if gister.state.get("mode") in ["edit", "create"]
+          window.location.hash = if gister.gist.id then "##{gister.gist.id}/#{gister.state.get('active')}" else "##{gister.state.get('active')}"
     
     createOrEdit: (gist) ->
       if /^\d+$/.test(gist) then @edit(gist)
@@ -56,14 +57,20 @@
       if gister.state.get("mode") isnt "edit"
         gister.state.set mode: "edit"
     
-    preview: (id) ->
+    preview: (id, filename) ->
       console.log "gister.router.preview", arguments...
+      
+      self = @
+      
       if id isnt gister.gist.id
-        gister.state.set mode: "loading"
-        gister.gist.fetch id, ->
-          gister.state.set
-            active: (gister.gist.files.last()?.get("filename") or gister.gist.files.getNewFilename())
-            mode: "preview"
+        gister.gist.reset({id})
+        dfd = gister.gist.fetch()
+          .done ->
+            self.activateFile filename or gister.gist.files.last()?.get("filename") or gister.gist.files.getNewFilename()
+            gister.state.set mode: "preview"
+          .fail ->
+            alert "No such gist"
+            self.activateFile()
       else
         gister.state.set mode: "preview"
 

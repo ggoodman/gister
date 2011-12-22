@@ -89,8 +89,8 @@
     mountPoint: "<li>"
     template: ->
       div ".fileops", ->
-        a ".rename", { href: "#", name: @filename }, "R"
-        a ".delete", { href: "#", name: @filename }, "X"
+        a ".rename", { href: "#", name: @filename, title: "Rename" }, "R"
+        a ".delete", { href: "#", name: @filename, title: "Delete" }, "X"
       a ".filename", { href: (if gister.gist.id then "##{gister.gist.id}/#{@filename}" else "##{@filename}"), title: @filename }, @filename
     
     events:

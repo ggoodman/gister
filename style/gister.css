@@ -61,7 +61,7 @@ html, body {
   font-weight: bold;
   margin-right: -5px;
   background-color: rgba(55,120,194,0.3);
-	border-radius: 5px 0 0 5px;
+  border-radius: 5px 0 0 5px;
 	box-shadow: 0 1px 2px rgba(0,0,0,0.2) inset, 0 1px 0 rgba(255,255,255,0.5);
 	color: #3d5979;
 	text-shadow: 0 1px 0 rgba(255,255,255,0.5);
@@ -78,6 +78,7 @@ html, body {
   padding: 0 5px;
 }
 #sidebar .files li .fileops a {
+  margin: 2px;
 }
 
 #sidebar .files li:hover {

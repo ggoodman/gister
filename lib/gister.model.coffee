@@ -4,7 +4,6 @@
   ###
   
   gister.state = new class extends lumbar.Model
-    initialize: ->
   
   
   ###
@@ -17,8 +16,6 @@
   class GistFileCollection extends lumbar.Collection
     model: GistFile
     sortBy: (model) -> model.get("filename")
-    initialize: ->
-      @bind "reset", -> console.log "RESET", arguments...
 
     getNewFilename: (index = "") ->
       index = +index + 1 while @get("Untitled#{index}")
@@ -31,24 +28,44 @@
   gister.gist = new class extends lumbar.Model
     defaults:
       id: ""
-      state: "loaded"
       description: ""
       
       
     initialize: ->
+      console.log "MODEL", @
       @files = new GistFileCollection()
+    
+    url: -> "https://api.github.com/gists/#{@id}"
+
+    sync: (method, model, options = {}) ->
+      methodMap =
+        create: "POST"
+        read: "GET"
+        update: "PATCH"
+        delete: "DELETE"
+     
+      params =
+        type: methodMap[method]
+        dataType: "json"
+        beforeSend: (xhr) ->
+          #xhr.setRequestHeader "X-HTTP-Method-Override", methodMap[method]
+          xhr.setRequestHeader "Authorization", "token #{token}" if token = readCookie("_gst.tok")
       
-      self = @
-      gister.state.bind "change:active", ->
-        active = gister.state.get("active")
-        console.log "Changed active file", active
-        unless self.files.get(active)
-          self.files.add filename: active
+      params.data = JSON.stringify(model.toJSON()) if method in ["create", "update"]
       
-    reset: ->
+      console.log "AJAX", _.extend({}, params, options)
+      
+      jQuery.ajax model.url(), _.extend(params, options)
+    
+    parse: (json) ->
+      @files.reset _.values(json.files)
+      delete json.files
+      json
+      
+    reset: (attrs = {}) ->
       @clear()
-      @set @defaults
       @files.reset()
+      @set _.extend {}, @defaults, attrs
     
     handleJson: (data) ->
       @set(data)
@@ -77,23 +94,6 @@
             self.handleJson(data)
             self.trigger "save:success"
         
-
-    fetch: (@id, cb = ->) ->
-      self = @
-      self.clear()
-      if @id
-        self.trigger "load:start"
-        
-        $.ajax "https://api.github.com/gists/#{self.id}",
-          dataType: "jsonp"
-          success: (json) ->
-            self.clear()
-            self.handleJson(json.data)
-            self.trigger "load:success"
-            cb(true)
-          error: ->
-            self.trigger "load:error"
-            cb()
 
   gister.user = new class extends lumbar.Model
     initialize: ->

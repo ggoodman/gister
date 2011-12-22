@@ -82,13 +82,14 @@
     log.enter "lumbar.view.renderIteratedChildView", arguments...
     parentView = lumbar.view.renderStack.peek()
     view = lumbar.view.getRegisteredInstance(model, viewName, model.toJSON())
+    
+    lumbar.view.registerDependentModel(view, model)
 
     parentView.childViews.push(view)
 
     log.exit """<div id="#{view.uid}">PLACEHOLDER DIV</div>"""
 
     # Return a placeholder div
-    #div id: view.uid, -> "PLACEHOLDER DIV THAT YOU SHOULDN'T SEE!"
     """<div id="#{view.uid}">PLACEHOLDER DIV</div>"""
 
 
@@ -107,8 +108,14 @@
     text placeholders
      
 
+  lumbar.view.registerDependentModel = (view, model) ->
+    view.rerender ||= ->
+      view.render(model.toJSON())
+      
+    model.unbind "change", view.rerender
+    model.bind "change", view.rerender
 
-  lumbar.view.registerDependentModel = (view, model, key) ->
+  lumbar.view.registerDependentAttribute = (view, model, key) ->
     model.unbind "change:#{key}", view.render
     model.bind "change:#{key}", view.render
      
@@ -132,7 +139,7 @@
     checkSegment = (parentView, model, segment) ->
       if model instanceof Backbone.Model
         model.uid ||= lumbar.uid()
-        lumbar.view.registerDependentModel(parentView, model, segment)
+        lumbar.view.registerDependentAttribute(parentView, model, segment)
       else if model instanceof Backbone.Collection
         model.uid ||= lumbar.uid()
         lumbar.view.registerDependentCollection(parentView, model)
@@ -208,14 +215,18 @@
      
 
     bindEvents: ->
+      @boundEvents ||= {}
       if @events
         for mapping, callback of @events
-          [event, selector...] = mapping.split(" ")
-          selector = selector.join(" ")
-          callback = if _.isFunction(callback) then callback else _.bind(@[callback], @)
+          unless @boundEvents[mapping]
+            [event, selector...] = mapping.split(" ")
+            selector = selector.join(" ")
+            @boundEvents[mapping] = if _.isFunction(callback) then callback else _.bind(@[callback], @)
+            
+          callback = @boundEvents[mapping]
           
-          if event and selector then @$.delegate selector, event, callback
-          else if event then @$.on event, callback
+          if event and selector then @$.undelegate(selector, event, callback).delegate(selector, event, callback)
+          else if event then @$.off(event, callback).on(event, callback)
       @
 
 

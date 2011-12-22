@@ -3,7 +3,7 @@
   lumbar.Deferred = jQuery.Deferred
   
   class lumbar.Model extends Backbone.Model
-    @persist: (attribute, filterOrOptions) ->
+    @persist: (attribute, filterOrOptions = {}) ->
       @persisted ||= {}
       @persisted[attribute] = _.extend {},
         if _.isFunction(filterOrOptions)
@@ -24,11 +24,12 @@
       
       oldInit = self.initialize
       self.initialize = ->
-        for attribute, {dependentAttributes, valueBuilder} of self.constructor.exposed
-          for dependency in dependentAttributes
-            self.bind "change:#{dependency}", (model) ->
-              args = model.get(attr) for attr in dependentAttributes
-              model.set attribute: valueBuilder.apply(model, args.push(attribute))
+        if self.constructor.exposed
+          for attribute, {dependentAttributes, valueBuilder} of self.constructor.exposed
+            for dependency in dependentAttributes
+              self.bind "change:#{dependency}", (model) ->
+                args = model.get(attr) for attr in dependentAttributes
+                model.set attribute: valueBuilder.apply(model, args.push(attribute))
         oldInit.call(self, arguments...)
       super(arguments...)
   
@@ -38,7 +39,8 @@
       unless @constructor.persisted then raw
       else
         json = {}
-        json[attribute] = filter(attribute, raw[attribute]) for attribute, filter of @constructor.persisted
+        for attribute, {save} of @constructor.persisted
+          json[attribute] = save.call(@, raw[attribute], attribute) 
         json
   
     toViewModel: ->
@@ -49,41 +51,47 @@
         json[attribute] = filter(attribute, raw[attribute]) for attribute, filter of @constructor.exposed
         json
   
-    save: (attrs) ->
+    save: (attrs, options) ->
+      self = @
       dfd = new lumbar.Deferred
-      super attrs,
-        success: dfd.resolve
-        error: dfd.reject
+      super attrs, _.extend {}, options,
+        success: (args...) -> dfd.resolveWith(self, args)
+        error: (args...) -> dfd.rejectWith(self, args)
+      dfd.done -> self.saved = _.clone(self.attributes )
       dfd.promise()
   
-    destroy: ->
+    destroy: (options) ->
+      self = @
       dfd = new lumbar.Deferred
-      super
-        success: dfd.resolve
-        error: dfd.reject
+      super _.extend {}, options,
+        success: (args...) -> dfd.resolveWith(self, args)
+        error: (args...) -> dfd.rejectWith(self, args)
       dfd.promise()
     
-    fetch: ->
-      console.log "lumbar.Model.fetch", @, arguments...
+    fetch: (options) ->
+      self = @
       dfd = new lumbar.Deferred
-      super
-        success: dfd.resolve
-        error: dfd.reject
+      super _.extend {}, options,
+        success: (args...) -> dfd.resolveWith(self, args)
+        error: (args...) -> dfd.rejectWith(self, args)
+      dfd.done -> self.saved = _.clone(self.attributes )
       dfd.promise()
   
   class lumbar.Collection extends Backbone.Collection
-    create: (attrs) ->
+    create: (attrs, options) ->
+      self = @
       dfd = new lumbar.Deferred
-      super attrs,
-        success: dfd.resolve
-        error: dfd.reject
+      super attrs, _.extend {}, options,
+        success: (args...) -> dfd.resolveWith(self, args)
+        error: (args...) -> dfd.rejectWith(self, args)
       dfd.promise()
     
-    fetch:  ->
+    fetch: (options) ->
+      self = @
       dfd = new lumbar.Deferred
-      super
-        success: dfd.resolve
-        error: dfd.reject
+      super _.extend {}, options,
+        success: (args...) -> dfd.resolveWith(self, args)
+        error: (args...) -> dfd.rejectWith(self, args)
       dfd.promise()
     
 

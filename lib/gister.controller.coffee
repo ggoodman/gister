@@ -1,8 +1,8 @@
 ((gister) ->
+  
   ###
   Set up routes
   ###
-  
   gister.router = new class extends Backbone.Router
     routes:
       ""                      : "create"
@@ -10,7 +10,7 @@
       "preview"               : "preview"
       ":gist/:filename"       : "edit"
       ":gist"                 : "createOrEdit"
-      
+          
     activateFile: (filename) ->
       # Check if the gist already has a file by that name, otherwise create it
       unless gister.gist.files.get(filename)
@@ -18,7 +18,8 @@
       
       # Avoid firing unnecessary callbacks
       unless filename is gister.state.get("active")
-        gister.state.set active: filename      
+        gister.state.set active: filename
+        window.location.hash = if gister.gist.id then "##{gister.gist.id}/#{gister.state.get('active')}" else "##{gister.state.get('active')}"
     
     createOrEdit: (gist) ->
       if /^\d+$/.test(gist) then @edit(gist)

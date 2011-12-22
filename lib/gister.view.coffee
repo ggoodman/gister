@@ -87,7 +87,18 @@
   lumbar.view "gister.sidebar.filelist.file", class extends lumbar.View
     mountPoint: "<li>"
     template: ->
+      div ".fileops", ->
+        a ".rename", { href: "#", name: @filename }, "R"
       a { href: (if gister.gist.id then "##{gister.gist.id}/#{@filename}" else "##{@filename}"), title: @filename }, @filename
+    
+    events:
+      "click .rename": (e) ->
+        e.preventDefault()
+        filename = $(@).attr("name")
+        renamed = prompt "New filename:"
+        
+        if renamed and renamed isnt filename
+          gister.gist.files.get(filename).rename(renamed)
     
     updateActive: ->
       active = gister.state.get("active")
@@ -163,10 +174,13 @@
 
   lumbar.view "gister.fileops",  class extends lumbar.View     
     template: ->
-      button ".btn.save.primary", "Save"
+      button ".btn.save.primary", "Save" if $m("gister.gist.owned")
+      button ".btn.fork.primary", "Fork"
+      button ".btn.delete.danger.pull-right", "Delete"
     
     events:
       "click .save": gister.gist.save
+      "click .fork": gister.gist.fork
 
   lumbar.view "gister.preview",  class extends lumbar.View     
     initialize: ->

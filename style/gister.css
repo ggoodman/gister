@@ -43,15 +43,6 @@ html, body {
   font-size: 10px;
 }
 
-#sidebar .ops {
-  float: right;
-  display: none;
-  font-weight: normal;
-}
-
-#sidebar li:hover .ops {
-  display: block;
-}
 
 #sidebar details {
   margin: 15px 0;
@@ -80,9 +71,13 @@ html, body {
   position: relative;
 }
 
-#sidebar .files li .ops {
+#sidebar .files li .fileops {
   display: none;
-  position: relative;
+  position: absolute;
+  right: 0;
+  padding: 0 5px;
+}
+#sidebar .files li .fileops a {
 }
 
 #sidebar .files li:hover {
@@ -90,7 +85,7 @@ html, body {
   color: black;
 }
 
-#sidebar .files li:hover .ops {
+#sidebar .files li:hover .fileops {
   display: block;
 }
 

@@ -12,6 +12,12 @@
 
   class GistFile extends lumbar.Model
     idAttribute: "filename"
+    rename: (filename) ->
+      @set
+        old_filename: @id
+        filename: filename
+      gister.router.activateFile(filename)
+      
     
   class GistFileCollection extends lumbar.Collection
     model: GistFile
@@ -24,75 +30,6 @@
     getNewFileUrl: (index = "") ->
       if gister.gist.id then "##{gister.gist.id}/#{@getNewFilename()}"
       else "##{@getNewFilename()}"
-      
-  gister.gist = new class extends lumbar.Model
-    defaults:
-      id: ""
-      description: ""
-      
-      
-    initialize: ->
-      console.log "MODEL", @
-      @files = new GistFileCollection()
-    
-    url: -> "https://api.github.com/gists/#{@id}"
-
-    sync: (method, model, options = {}) ->
-      methodMap =
-        create: "POST"
-        read: "GET"
-        update: "PATCH"
-        delete: "DELETE"
-     
-      params =
-        type: methodMap[method]
-        dataType: "json"
-        beforeSend: (xhr) ->
-          #xhr.setRequestHeader "X-HTTP-Method-Override", methodMap[method]
-          xhr.setRequestHeader "Authorization", "token #{token}" if token = readCookie("_gst.tok")
-      
-      params.data = JSON.stringify(model.toJSON()) if method in ["create", "update"]
-      
-      console.log "AJAX", _.extend({}, params, options)
-      
-      jQuery.ajax model.url(), _.extend(params, options)
-    
-    parse: (json) ->
-      @files.reset _.values(json.files)
-      delete json.files
-      json
-      
-    reset: (attrs = {}) ->
-      @clear()
-      @files.reset()
-      @set _.extend {}, @defaults, attrs
-    
-    handleJson: (data) ->
-      @set(data)
-      @files.reset _.values(data.files)
-    
-    save: =>
-      self = @
-      if @id
-        self.trigger "save:start"
-        
-        data = 
-          files: {}
-          
-        self.files.each (file) ->
-          data.files[file.get("filename")] =
-            content: file.get("content")
-        
-        console.log "Saving data", data
-        
-        $.ajax "https://api.github.com/gists/#{self.id}?access_token=#{readCookie('_gst.tok')}",
-          dataType: "json"
-          type: "patch"
-          data: JSON.stringify(data)
-          success: (data) ->
-            console.log "JSON came back"
-            self.handleJson(data)
-            self.trigger "save:success"
         
 
   gister.user = new class extends lumbar.Model
@@ -110,5 +47,72 @@
           success: (json) ->
             self.set(json.data)
             console.log "USER", json
+            
+            
+            
+  gister.gist = new class extends lumbar.Model
+    @persist "description"
+    @persist "public", -> true
+    @persist "files", ->
+      files = {}
+      @files.each (file) ->
+        old_filename = file.get("old_filename")
+        filename = old_filename or file.id
+        files[filename] = { content: file.get("content") }
+        files[filename].filename = file.id
+      for filename, file in @saved.files
+        files[filename] = null unless files[filename]
+      files
+      
+    defaults:
+      id: ""
+      description: ""
+      
+    initialize: ->
+      @files = new GistFileCollection()
+      
+      gister.user.bind "change:id", (user) ->
+        gister.gist.set owned: (user.id and user.id == gister.user.id) or false
+    
+    url: -> "https://api.github.com/gists/#{@id}"
+
+    sync: (method, model, options = {}) ->
+      methodMap =
+        create: "POST"
+        read:   "GET"
+        update: "PATCH"
+        delete: "DELETE"
+     
+      params =
+        url: model.url()
+        type: methodMap[method]
+        dataType: "json"
+        beforeSend: (xhr) ->
+          #xhr.setRequestHeader "X-HTTP-Method-Override", methodMap[method]
+          xhr.setRequestHeader "Authorization", "token #{token}" if token = readCookie("_gst.tok")
+      
+      params.data = JSON.stringify(model.toJSON()) if method in ["create", "update"]
+      
+      jQuery.ajax _.extend(params, options)
+    
+    parse: (json) ->
+      @files.reset _.values(json.files)
+      delete json.files
+      json.owned = (json.user and json.user.id == gister.user.id) or false
+      json
+    
+    reset: (attrs = {}) ->
+      @clear()
+      @files.reset()
+      @set _.extend {}, @defaults, attrs
+    
+    handleJson: (data) ->
+      @set(data)
+      @files.reset _.values(data.files)
+      
+    fork: ->
+      @save({}, { url: @url() + "/fork", type: "POST"})
+        .then -> gister.router.activateFile(gister.state.get('active'))
+
 
 )(window.gister)

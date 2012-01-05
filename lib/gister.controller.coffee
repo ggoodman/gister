@@ -6,6 +6,7 @@
   gister.router = new class extends Backbone.Router
     routes:
       ""                      : "create"
+      "browse"                : "browse"
       "preview/:gist"         : "preview"
       "preview"               : "preview"
       ":gist/:filename"       : "edit"
@@ -21,6 +22,16 @@
         gister.state.set active: filename
         if gister.state.get("mode") in ["edit", "create"]
           window.location.hash = if gister.gist.id then "##{gister.gist.id}/#{gister.state.get('active')}" else "##{gister.state.get('active')}"
+          
+    browse: ->
+      console.log "gister.router.create", arguments...
+      
+      gister.gists.public.fetch()
+      
+      # Allow the interface to react to a change in modes
+      if gister.state.get("mode") isnt "browse"
+        gister.state.set mode: "browse"
+      
     
     createOrEdit: (gist) ->
       if /^\d+$/.test(gist) then @edit(gist)

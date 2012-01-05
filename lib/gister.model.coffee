@@ -48,7 +48,10 @@
             self.set(json.data)
             console.log "USER", json
             
-            
+    logout: =>
+      @id = null
+      @clear()
+      @
             
   gister.gist = new class extends lumbar.Model
     @persist "description"
@@ -118,6 +121,25 @@
     fork: ->
       @save({}, { url: @url() + "/fork", type: "POST"})
         .then -> gister.router.activateFile(gister.state.get('active'))
+  
+  class GistsCollection extends lumbar.Collection
+    url: -> "https://api.github.com/gists"
+
+    sync: (method, model, options = {}) ->
+      params =
+        url: model.url()
+        type: "GET"
+        dataType: "json"
+        beforeSend: (xhr) ->
+          #xhr.setRequestHeader "X-HTTP-Method-Override", methodMap[method]
+          #xhr.setRequestHeader "Authorization", "token #{token}" if token = readCookie("_gst.tok")
+      
+      jQuery.ajax _.extend(params, options)
+
+  gister.gists = new class extends lumbar.Model
+    initialize: ->
+      @public = new GistsCollection()
+  
 
 
 )(window.gister)

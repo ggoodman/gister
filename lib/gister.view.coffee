@@ -18,7 +18,7 @@
       "click .logout": (e) ->
         e.preventDefault()
         
-        gister.user.clear()
+        gister.user.logout()
         eraseCookie("_gst.tok")
 
 
@@ -69,6 +69,8 @@
                 a href: "##{$m('gister.state.active')}", class: "create edit", "Edit"
             li name: "preview", ->
               a href: "#preview/#{gister.gist.id}", class: "preview", "Preview"
+            li name: "browse", ->
+              a href: "#browse", class: "browse", "Browse"
           if $m("gister.user.login")
             $v("gister.header.userpanel")
           else
@@ -230,9 +232,11 @@
           throw new Error("FS: #{msg}")
         
         runPreview = ->
+          filename = if gister.gist.files.get("index.html") then "index.html" else gister.state.get("active")
+          
           $content = $("#content")
           $iframe = $("<iframe />")
-            .attr("src", "filesystem:#{window.location.protocol}//#{window.location.host}/temporary/#{gister.gist.id}/index.html")
+            .attr("src", "filesystem:#{window.location.protocol}//#{window.location.host}/temporary/#{gister.gist.id}/#{filename}")
             .css(border: 0)
             .width($content.width())
             .height($content.height())
@@ -252,7 +256,6 @@
                   fileWriter.onerror = errorHandler
                   
                   content = file.get("content")
-                  console.log "Blob", file.get("filename"), content
                   gister.gist.files.each (file) ->
                     content = content.replace file.get("filename"), "filesystem:#{window.location.protocol}//#{window.location.host}/temporary/#{gister.gist.id}/#{file.get('filename')}"
                   
@@ -267,7 +270,24 @@
               , errorHandler
             , errorHandler
   
-        requestFileSystem TEMPORARY, 5 * 1024 * 1024, loadFiles, errorHandler      
+        requestFileSystem TEMPORARY, 5 * 1024 * 1024, loadFiles, errorHandler
+  
+  lumbar.view "gister.browse.link", class extends lumbar.View
+    template: ->
+      a href: "##{@id}", ->
+        h2 @description
+  
+  lumbar.view "gister.browse", class extends lumbar.View
+    template: ->
+      section ".public", ->
+        h1 "Public Gists"
+        $c("gister.gists.public", "gister.browse.link")
+        
+      if $m("gister.user.login")
+        section ".own", ->
+          h1 "My Gists"
+        
+        
 
   gister.view = new class extends lumbar.View
     mountPoint: "body"
@@ -281,5 +301,7 @@
             div "#editarea", -> $v("gister.editor")
           when "preview"
             $v("gister.preview")
+          when "browse"
+            $v("gister.browse")
 
 )(window.gister)

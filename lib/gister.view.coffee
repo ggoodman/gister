@@ -274,10 +274,20 @@
   
   lumbar.view "gister.browse.link", class extends lumbar.View
     template: ->
-      a href: "##{@id}", ->
-        h2 @description
+      h2 ->
+        text "#{@id}: "
+        text @description or "Untitled"
+      p ->
+        text @user.login
+      ul ->
+        for file, details of @files
+          li ->
+            a { href: "##{@id}/#{file}"}, details.filename
   
   lumbar.view "gister.browse", class extends lumbar.View
+    mountArgs:
+      id: "browse"
+      
     template: ->
       section ".public", ->
         h1 "Public Gists"

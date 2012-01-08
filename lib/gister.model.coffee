@@ -136,9 +136,7 @@
       
       jQuery.ajax _.extend(params, options)
 
-  gister.gists = new class extends lumbar.Model
-    initialize: ->
-      @public = new GistsCollection()
+  gister.browse = new GistsCollection
   
 
 

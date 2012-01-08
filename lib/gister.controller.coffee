@@ -6,7 +6,9 @@
   gister.router = new class extends Backbone.Router
     routes:
       ""                      : "create"
-      "browse"                : "browse"
+      "browse"                : "browsePublic"
+      "browse/mine"           : "browseMine"
+      "browse/starred"        : "browseStarred"
       "preview/:gist"         : "preview"
       "preview"               : "preview"
       ":gist/:filename"       : "edit"
@@ -22,11 +24,34 @@
         gister.state.set active: filename
         if gister.state.get("mode") in ["edit", "create"]
           window.location.hash = if gister.gist.id then "##{gister.gist.id}/#{gister.state.get('active')}" else "##{gister.state.get('active')}"
+    
+    browsePublic: ->
+      gister.browse.fetch
+        url: "https://api.github.com/gists"
+      
+      @browse()
+    
+    browseMine: ->
+      gister.browse.fetch
+        url: "https://api.github.com/gists"
+        beforeSend: (xhr) ->
+          #xhr.setRequestHeader "X-HTTP-Method-Override", methodMap[method]
+          xhr.setRequestHeader "Authorization", "token #{token}" if token = readCookie("_gst.tok")
+      
+      @browse()
+    
+    browseStarred: ->
+      gister.browse.fetch
+        url: "https://api.github.com/gists/starred"
+        beforeSend: (xhr) ->
+          #xhr.setRequestHeader "X-HTTP-Method-Override", methodMap[method]
+          xhr.setRequestHeader "Authorization", "token #{token}" if token = readCookie("_gst.tok")
+      
+      @browse()
+
           
     browse: ->
       console.log "gister.router.create", arguments...
-      
-      gister.gists.public.fetch()
       
       # Allow the interface to react to a change in modes
       if gister.state.get("mode") isnt "browse"

@@ -69,8 +69,17 @@
                 a href: "##{$m('gister.state.active')}", class: "create edit", "Edit"
             li name: "preview", ->
               a href: "#preview/#{gister.gist.id}", class: "preview", "Preview"
-            li name: "browse", ->
-              a href: "#browse", class: "browse", "Browse"
+            li ".dropdown", "data-dropdown": "dropdown", name: "browse", ->
+              a href: "#", class: "browse dropdown-toggle", "Browse"
+              ul ".dropdown-menu", ->
+                li ->
+                  a href: "#browse", "Public"
+                if $m("gister.user.login")
+                  li ".divider", ->
+                  li ->
+                    a href: "#browse/mine", "My Gists"
+                  li ->
+                    a href: "#browse/starred", "Starred"
           if $m("gister.user.login")
             $v("gister.header.userpanel")
           else
@@ -273,29 +282,27 @@
         requestFileSystem TEMPORARY, 5 * 1024 * 1024, loadFiles, errorHandler
   
   lumbar.view "gister.browse.link", class extends lumbar.View
+    mountArgs:
+      className: "row"
     template: ->
-      h2 ->
-        text "#{@id}: "
-        text @description or "Untitled"
-      p ->
-        text @user.login
-      ul ->
-        for file, details of @files
-          li ->
-            a { href: "##{@id}/#{file}"}, details.filename
+      div ".span16", ->
+        h2 ->
+          text "#{@id}: "
+          text @description or "Untitled"
+        p ->
+          text @user.login
+        ul ->
+          for file, details of @files
+            li ->
+              a { href: "##{@id}/#{file}"}, details.filename
   
   lumbar.view "gister.browse", class extends lumbar.View
     mountArgs:
       id: "browse"
       
     template: ->
-      section ".public", ->
-        h1 "Public Gists"
-        $c("gister.gists.public", "gister.browse.link")
-        
-      if $m("gister.user.login")
-        section ".own", ->
-          h1 "My Gists"
+      section ".public.container", ->
+        $c("gister.browse", "gister.browse.link")
         
         
 

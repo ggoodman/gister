@@ -60,7 +60,7 @@
     template: ->
       div ".topbar", ->
         div ".fill", ->
-          h3 ".brand", "Gister"
+          a ".brand", href: "#", "Gister"
           ul ".nav", ->
             li name: "edit", ->
               if $m("gister.gist.id")
@@ -130,7 +130,7 @@
       
   lumbar.view "gister.sidebar.filelist", class extends lumbar.View
     mountPoint: "<ul>"
-    mountArgs:
+    mountOptions:
       class: "files"
     template: ->
       $c("gister.gist.files", "gister.sidebar.filelist.file")
@@ -211,7 +211,8 @@
         button ".btn.fork.primary", "Fork"
     
     events:
-      "click .save": -> gister.gist.save()
+      "click .save": -> gister.gist.save
+        success: -> gister.router.navigate "##{gister.gist.id}", true
       "click .fork": -> gister.gist.fork()
       "click .delete": -> gister.gist.destroy() if "delete" == prompt "Type 'delete' to confirm deletion:"
 
@@ -282,7 +283,7 @@
         requestFileSystem TEMPORARY, 5 * 1024 * 1024, loadFiles, errorHandler
   
   lumbar.view "gister.browse.link", class extends lumbar.View
-    mountArgs:
+    mountOptions:
       className: "row"
     template: ->
       div ".span16", ->
@@ -297,7 +298,7 @@
               a { href: "##{@id}/#{file}"}, details.filename
   
   lumbar.view "gister.browse", class extends lumbar.View
-    mountArgs:
+    mountOptions:
       id: "browse"
       
     template: ->

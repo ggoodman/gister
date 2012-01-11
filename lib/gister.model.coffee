@@ -69,7 +69,7 @@
       files
       
     defaults:
-      id: ""
+      id: null
       description: ""
       owned: true
       
@@ -79,7 +79,7 @@
       gister.user.bind "change:id", (user) ->
         gister.gist.set owned: (user.id and user.id == gister.user.id) or false
     
-    url: -> "https://api.github.com/gists/#{@id}"
+    url: -> "https://api.github.com/gists" + if @id then "/#{@id}" else ""
 
     sync: (method, model, options = {}) ->
       methodMap =
@@ -121,9 +121,14 @@
     fork: ->
       @save({}, { url: @url() + "/fork", type: "POST"})
         .then -> gister.router.activateFile(gister.state.get('active'))
+        
+  class GistModel extends lumbar.Model
+  
   
   class GistsCollection extends lumbar.Collection
     url: -> "https://api.github.com/gists"
+    
+    model: GistModel
 
     sync: (method, model, options = {}) ->
       params =

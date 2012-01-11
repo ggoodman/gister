@@ -1,13 +1,9 @@
 window.lumbar =
   version: "0.0.1"
-  start: (mountPoint) ->
+  start: ->
     console.log "lumbar.start", arguments...
           
     Backbone.history.start()
-    
-    console.log "View", lumbar.view.render()
-    
-    gister.view.render().$.appendTo("body")
 
 _.mixin obj: (key, value) ->
   hash = {}
@@ -15,17 +11,9 @@ _.mixin obj: (key, value) ->
   hash
 
 class lumbar.Emitter
-  bind: (event, listener) =>
-    @listeners ?= {}
-    (@listeners[event] ?= []).push(listener)
-    @
-  trigger: (event, args...) =>
-    #console.log "limber.Emitter::emit", arguments...
-    @listeners ?= {}
-    listener(args...) for listener in @listeners[event] if @listeners[event]
-    @
 
-console.log "Backbone.Router", Backbone.Router
+_.extend lumbar.Emitter.prototype, Backbone.Events
+
 
 class lumbar.Router extends Backbone.Router
   routes: []
@@ -36,4 +24,3 @@ class lumbar.Router extends Backbone.Router
     
     for route, name of @routes
       @route(new RegExp("^#{route}", "i"), name, @[name])
-    

@@ -1,258 +1,268 @@
-((lumbar) ->
-  lumbar.uid = do ->
-    index = 0
-    -> "uid-#{+new Date}-#{index++}"
+lumbar = window.lumbar
 
-  window.log = do ->
-    repeat = (char, times) ->
-      str = ""
-      for i in [0...times] then str += char
-      str
+lumbar.uid = do ->
+  index = 0
+  -> "uid-#{+new Date}-#{index++}"
 
-    stack = []
-    enter: (method, args...) ->
-      console.log repeat(".", stack.length) + ">", method, args
-      stack.push(method)
-    exit: (args...) ->
-      method = stack.pop()
-      console.log repeat(".", stack.length) + "<", method, args
-   
+window.log = do ->
+  repeat = (char, times) ->
+    str = ""
+    for i in [0...times] then str += char
+    str
 
-  lumbar.view = (viewName, constructor) ->
-    log.enter "lumbar.view", arguments...
-    if constructor
-      constructor::viewName = viewName
-      lumbar.view.constructors[viewName] = constructor
-    log.exit()
-    lumbar.view.constructors[viewName]
-  lumbar.view.constructors = {}
+  stack = []
+  enter: (method, args...) ->
+    return unless lumbar.view.DEBUG
+    console.log repeat(".", stack.length) + ">", method, args
+    stack.push(method)
+  exit: (args...) ->
+    return unless lumbar.view.DEBUG
+    method = stack.pop()
+    console.log repeat(".", stack.length) + "<", method, args
+ 
 
-   
+lumbar.view = (viewName, constructor) ->
+  log.enter "lumbar.view", arguments...
+  if constructor
+    constructor::viewName = viewName
+    lumbar.view.constructors[viewName] = constructor
+  log.exit()
+  lumbar.view.constructors[viewName]
+lumbar.view.constructors = {}
 
-  lumbar.view.registry = {}
-  lumbar.view.getRegisteredInstance = (dependent, viewName, locals = {}) ->
-    log.enter "lumbar.view.getRegisteredInstance", arguments...
-    uid = dependent.uid or dependent.uid = lumbar.uid()
-    reg = lumbar.view.registry
+lumbar.view.DEBUG = true
 
-    reg[uid] ||= {}
+lumbar.view.registry = {}
+lumbar.view.getRegisteredInstance = (dependent, viewName, locals = {}, args = {}) ->
+  log.enter "lumbar.view.getRegisteredInstance", arguments...
+  uid = dependent.uid or dependent.uid = lumbar.uid()
+  reg = lumbar.view.registry
 
-    unless reg[uid][viewName]
-      unless viewClass = lumbar.view(viewName)          
-        throw new Error("View not defined: #{viewName}")
+  reg[uid] ||= {}
 
-      reg[uid][viewName] = new viewClass()
-      reg[uid][viewName].render(locals)
-    
-    log.exit reg[uid][viewName]
+  unless reg[uid][viewName]
+    unless viewClass = lumbar.view(viewName)          
+      throw new Error("View not defined: #{viewName}")
 
-    reg[uid][viewName]
-
-   
-
-  lumbar.view.childViews = {}
-  lumbar.view.registerChildView = (parentView, childView) ->
-    lumbar.childViews[parentView.uid] ||= {}
-    lumbar.childViews[parentView.uid][childView.uid] = childViews
-
-   
-
-  lumbar.view.renderStack = []
-  lumbar.view.renderStack.peek = (n = lumbar.view.renderStack.length - 1) ->
-    lumbar.view.renderStack[n]
-
-   
-
-  lumbar.view.renderChildView = (viewName, locals = {}) ->
-    log.enter "lumbar.view.renderChildView", arguments...
-    parentView = lumbar.view.renderStack.peek()
-    view = lumbar.view.getRegisteredInstance(parentView, viewName, locals)
-
-    parentView.childViews.push(view)
-
-    log.exit """<div id="#{view.uid}">PLACEHOLDER DIV</div>"""
-
-    # Return a placeholder div
-    #div id: view.uid, -> "PLACEHOLDER DIV THAT YOU SHOULDN'T SEE!"
-    """<div id="#{view.uid}">PLACEHOLDER DIV</div>"""
-
+    reg[uid][viewName] = new viewClass(args)
+    reg[uid][viewName].render(locals)
   
+  log.exit reg[uid][viewName]
 
-  lumbar.view.renderIteratedChildView = (viewName, model) ->
-    log.enter "lumbar.view.renderIteratedChildView", arguments...
-    parentView = lumbar.view.renderStack.peek()
-    view = lumbar.view.getRegisteredInstance(model, viewName, model.toJSON())
-    
-    lumbar.view.registerDependentModel(view, model)
+  reg[uid][viewName]
 
-    parentView.childViews.push(view)
+ 
 
-    log.exit """<div id="#{view.uid}">PLACEHOLDER DIV</div>"""
+lumbar.view.childViews = {}
+lumbar.view.registerChildView = (parentView, childView) ->
+  lumbar.childViews[parentView.uid] ||= {}
+  lumbar.childViews[parentView.uid][childView.uid] = childViews
 
-    # Return a placeholder div
-    """<div id="#{view.uid}">PLACEHOLDER DIV</div>"""
+ 
 
+lumbar.view.renderStack = []
+lumbar.view.renderStack.peek = (n = lumbar.view.renderStack.length - 1) ->
+  lumbar.view.renderStack[n]
 
+ 
 
-  lumbar.view.renderIteratedView = (modelPath, viewName, locals = {}) ->
-    log.enter "lumbar.view.renderIteratedView", arguments...
-    collection = lumbar.view.resolveModel(modelPath)
+lumbar.view.renderChildView = (viewName, locals = {}) ->
+  log.enter "lumbar.view.renderChildView", arguments...
+  parentView = lumbar.view.renderStack.peek()
+  view = lumbar.view.getRegisteredInstance(parentView, viewName, locals)
+  
+  parentView.childViews.push(view)
 
-    placeholders = ""
+  log.exit """<div id="#{view.uid}">PLACEHOLDER DIV</div>"""
 
-    collection.each (model) ->
-      placeholders += lumbar.view.renderIteratedChildView(viewName, model)
-    
-    log.exit(placeholders)
-
-    text placeholders
-     
-
-  lumbar.view.registerDependentModel = (view, model) ->
-    view.rerender ||= ->
-      view.render(model.toJSON())
-      
-    model.unbind "change", view.rerender
-    model.bind "change", view.rerender
-
-  lumbar.view.registerDependentAttribute = (view, model, key) ->
-    model.unbind "change:#{key}", view.render
-    model.bind "change:#{key}", view.render
-     
+  # Return a placeholder div
+  #div id: view.uid, -> "PLACEHOLDER DIV THAT YOU SHOULDN'T SEE!"
+  """<div id="#{view.uid}">PLACEHOLDER DIV</div>"""
 
 
-  lumbar.view.registerDependentCollection = (view, model) ->
-    model.unbind "add", view.render
-    model.unbind "remove", view.render
-    model.unbind "reset", view.render
-    model.bind "add", view.render
-    model.bind "remove", view.render
-    model.bind "reset", view.render
+
+lumbar.view.renderIteratedChildView = (viewName, model) ->
+  log.enter "lumbar.view.renderIteratedChildView", arguments...
+  parentView = lumbar.view.renderStack.peek()
+  view = lumbar.view.getRegisteredInstance(model, viewName, model.toViewModel(), model: model)
+  
+  lumbar.view.registerDependentModel(view, model)
+
+  parentView.childViews.push(view)
+
+  log.exit """<div id="#{view.uid}">PLACEHOLDER DIV</div>"""
+
+  # Return a placeholder div
+  """<div id="#{view.uid}">PLACEHOLDER DIV</div>"""
+
+
+
+lumbar.view.renderIteratedView = (modelPath, viewName, locals = {}) ->
+  log.enter "lumbar.view.renderIteratedView", arguments...
+  collection = lumbar.view.resolveModel(modelPath)
+
+  placeholders = ""
+
+  collection.each (model) ->
+    placeholders += lumbar.view.renderIteratedChildView(viewName, model)
+  
+  log.exit(placeholders)
+
+  text placeholders
    
 
-  lumbar.view.resolveModel = (modelPath) ->
-    log.enter "lumbar.view.resolveModel", arguments...
-    parentView = lumbar.view.renderStack.peek()
-    model = window
-    segments = modelPath.split(".")
-
-    checkSegment = (parentView, model, segment) ->
-      if model instanceof Backbone.Model
-        model.uid ||= lumbar.uid()
-        lumbar.view.registerDependentAttribute(parentView, model, segment)
-      else if model instanceof Backbone.Collection
-        model.uid ||= lumbar.uid()
-        lumbar.view.registerDependentCollection(parentView, model)
+lumbar.view.registerDependentModel = (view, model) ->
+  view.rerender ||= ->
+    view.render(model.toViewModel())
     
-    for segment in segments
-      if model[segment] then model = model[segment]
-      else
-        checkSegment(parentView, model, segment)
-        model = model.get(segment)
-    
-    checkSegment(parentView, model)
+  model.unbind "change", view.rerender
+  model.bind "change", view.rerender
 
-    log.exit model
-    
-    model
-
+lumbar.view.registerDependentAttribute = (view, model, key) ->
+  model.unbind "change:#{key}", view.render
+  model.bind "change:#{key}", view.render
    
 
-  class lumbar.View extends lumbar.Emitter
-    @register = (name) -> lumbar.view(name, @)
+
+lumbar.view.registerDependentCollection = (view, model) ->
+  console.log "lumbar.view.registerDependentCollection", arguments...
+  model.unbind "add", view.render
+  model.unbind "remove", view.render
+  model.unbind "reset", view.render
+  model.bind "add", view.render
+  model.bind "remove", view.render
+  model.bind "reset", view.render
+
+ 
+
+lumbar.view.resolveModel = (modelPath) ->
+  log.enter "lumbar.view.resolveModel", arguments...
+  parentView = lumbar.view.renderStack.peek()
+  model = window
+  segments = modelPath.split(".")
+
+  checkSegment = (parentView, model, segment) ->
+    if model instanceof Backbone.Model
+      model.uid ||= lumbar.uid()
+      lumbar.view.registerDependentAttribute(parentView, model, segment)
+    else if model instanceof Backbone.Collection
+      model.uid ||= lumbar.uid()
+      lumbar.view.registerDependentCollection(parentView, model)
+  
+  for segment in segments
+    if model[segment] then model = model[segment]
+    else
+      checkSegment(parentView, model, segment)
+      model = model.get(segment)
+  
+  checkSegment(parentView, model)
+
+  log.exit model
+  
+  model
+
+ 
+
+class lumbar.View extends lumbar.Emitter
+  @register = (name) -> lumbar.view(name, @)
+  
+  mountPoint: "<div></div>"
+  mountOptions: null
+  mountMethod: "html"
+  template: ->
+  initialize: ->
+
+
+  constructor: (args) ->
+    _.extend(@, args)
     
-    mountPoint: "<div></div>"
-    mountArgs: null
-    mountMethod: "html"
-    template: ->
-    initialize: ->
+    @uid = lumbar.uid()
+
+    @childViews = []
+
+    @initialize(arguments...)
+
+  detach: ->
+    @$.detach if @$
+    @
 
 
-    constructor: ->
-      @uid = lumbar.uid()
+  attachChildViews: ->
+    for childView in @childViews
+      @$.find("##{childView.uid}").replaceWith(childView.$)
+    @
 
-      @childViews = []
+  detachChildViews: ->
+    while @childViews.length
+      childView = @childViews.pop()
+      childView.detach()
+    @
 
-      @initialize(arguments...)
+  create: ->
+    args = [@mountPoint]
+    args.push(if _.isFunction(@mountOptions) then @mountOptions.call(@) else @mountOptions) if @mountOptions?
+    @$ = $.apply($, args)
+    @trigger "create", @
+  
+  update: ->
+    @$.prop(if _.isFunction(@mountOptions) then @mountOptions.call(@) else @mountOptions) if @mountOptions?
+    @trigger "update", @
 
-    detach: ->
-      @$.detach if @$
-      @
+  detach: ->
+    @$.detach()
+    @trigger "detach", @
 
+  getRenderOptions: (locals) ->
+    _.extend locals,
+      parent: @
+      hardcode:
+        $v: lumbar.view.renderChildView
+        $c: lumbar.view.renderIteratedView
+        $m: lumbar.view.resolveModel
 
-    attachChildViews: ->
-      for childView in @childViews
-        @$.find("##{childView.uid}").replaceWith(childView.$)
-      @
+  generateMarkup: (locals) ->
+    @markup = CoffeeKup.render(@template, @getRenderOptions(locals))
+    @trigger "generate", @
+   
 
-    detachChildViews: ->
-      while @childViews.length
-        childView = @childViews.pop()
-        childView.detach()
-      @
-
-    create: ->
-      args = [@mountPoint]
-      args.push(@mountArgs) if @mountArgs?
-      @$ = $.apply($, args)
-      @trigger "create", @
-
-    detach: ->
-      @$.detach()
-      @trigger "detach", @
-
-    getRenderOptions: (locals) ->
-      _.extend locals,
-        parent: @
-        hardcode:
-          $v: lumbar.view.renderChildView
-          $c: lumbar.view.renderIteratedView
-          $m: lumbar.view.resolveModel
-
-    generateMarkup: (locals) ->
-      @markup = CoffeeKup.render(@template, @getRenderOptions(locals))
-      @trigger "generate", @
-     
-
-    bindEvents: ->
-      @boundEvents ||= {}
-      if @events
-        for mapping, callback of @events
-          unless @boundEvents[mapping]
-            [event, selector...] = mapping.split(" ")
-            selector = selector.join(" ")
-            @boundEvents[mapping] = if _.isFunction(callback) then callback else _.bind(@[callback], @)
-            
-          callback = @boundEvents[mapping]
+  bindEvents: ->
+    @boundEvents ||= {}
+    if @events
+      for mapping, callback of @events
+        unless @boundEvents[mapping]
+          [event, selector...] = mapping.split(" ")
+          selector = selector.join(" ")
+          @boundEvents[mapping] = if _.isFunction(callback) then callback else _.bind(@[callback], @)
           
-          if event and selector then @$.undelegate(selector, event, callback).delegate(selector, event, callback)
-          else if event then @$.off(event, callback).on(event, callback)
-      @
+        callback = @boundEvents[mapping]
+        
+        if event and selector then @$.undelegate(selector, event, callback).delegate(selector, event, callback)
+        else if event then @$.off(event, callback).on(event, callback)
+    @
 
 
-    # Full re-render
-    render: (locals = {}) =>
-      log.enter @viewName, arguments...
-      lumbar.view.renderStack.push(@)
+  # Full re-render
+  render: (locals = {}) =>
+    log.enter @viewName, arguments...
+    lumbar.view.renderStack.push(@)
 
-      @detachChildViews()
+    @detachChildViews()
 
-      unless @$ then @create()
+    if @$ then @update()
+    else @create()
 
-      @generateMarkup(locals)
+    @generateMarkup(locals)
 
-      @$[@mountMethod] @markup
+    @$[@mountMethod] @markup
 
-      @trigger "mount", @
+    @trigger "mount", @
 
-      @attachChildViews()
+    @attachChildViews()
 
-      lumbar.view.renderStack.pop()
+    lumbar.view.renderStack.pop()
 
-      @bindEvents()
+    @bindEvents()
 
-      log.exit()
+    log.exit()
 
-      @trigger "render"
-
-)(window.lumbar)
+    @trigger "render"

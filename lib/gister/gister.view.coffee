@@ -134,6 +134,11 @@
       class: "files"
     template: ->
       $c("gister.gist.files", "gister.sidebar.filelist.file")
+      
+  
+  lumbar.view "gister.sidebar.previewer", class extends lumbar.View
+    template: ->
+      text "TODO"
   
           
   lumbar.view "gister.sidebar", class extends lumbar.View
@@ -143,6 +148,10 @@
           text "Files"
           a ".add.pull-right", href: $m("gister.gist.files").getNewFileUrl(), title: "Add a new file to the gist", "Add"
         $v("gister.sidebar.filelist")
+      
+      details ".preview", open: "open", ->
+        summary "Previewer"
+        $v("gister.sidebar.previewer")
         
         
   lumbar.view "gister.editor", class extends lumbar.View

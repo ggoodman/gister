@@ -220,6 +220,31 @@
     initialize: ->
       self = @
       @bind "render", ->
+        gist = gister.gist.toJSON()
+        json = { description: gist.description or "", files: {} }
+        
+        json.files[filename] = file.content for filename, file of gist.files
+        
+        console.log "GIST", gist
+        console.log "PLUNK", json
+        
+        jQuery.ajax "http://plunker.no.de/api/v1/plunks",
+          type: "post"
+          contentType: "application/json"
+          dataType: "json"
+          data: JSON.stringify(json)
+          success: (plunk) ->
+            filename = if gister.gist.files.get("index.html") then "index.html" else gister.state.get("active")
+            
+            $content = $("#content")
+            $iframe = $("<iframe />")
+              .attr("src", "#{plunk.url}#{filename}")
+              .css(border: 0)
+              .width($content.width())
+              .height($content.height())
+            
+            self.$.html $iframe            
+        ###
         window.requestFileSystem ||= window.webkitRequestFileSystem
         window.resolveLocalFilesystemURL ||= window.webkitResolveLocalFileSystemURL
         window.BlobBuilder ||= window.WebKitBlobBuilder
@@ -281,6 +306,7 @@
             , errorHandler
   
         requestFileSystem TEMPORARY, 5 * 1024 * 1024, loadFiles, errorHandler
+        ###
   
   lumbar.view "gister.browse.link", class extends lumbar.View
     mountOptions:
